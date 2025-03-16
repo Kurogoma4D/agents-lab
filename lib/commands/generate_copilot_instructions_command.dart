@@ -35,7 +35,7 @@ class GenerateCopilotInstructionsCommand extends Command<int> {
       ..addOption(
         'separator',
         help: 'Separator to insert between content from different files',
-        defaultsTo: '',
+        defaultsTo: '\n\n',
       );
   }
 
