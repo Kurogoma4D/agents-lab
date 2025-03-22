@@ -37,11 +37,44 @@ class MyWidget extends StatelessWidget {
 
 ### 再利用可能なウィジェットの抽出
 
-共通パターンや複雑なUI部分はカスタムウィジェットに切り出し、コードの重複を避ける。
+共通パターンや複雑なUI部分はCustom Widgetに切り出し、コードの重複を避ける。
 
 ### Compositionを優先する
 
 継承ではなく、複数のウィジェットを組み合わせてUIを構築する。これにより、柔軟性と再利用性が向上する。
+
+### 適切なWidgetの切り出し
+
+特定のファイル内でのみ使うUIコンポーネントは、関数ではなくCustom Widget（StatelessWidget, StatefulWidget）として適切な単位で切り出す。
+基本的には変化する状態を考慮したうえで、状態が変更される範囲、それ以外の範囲をそれぞれWidgetとして定義する。
+こうすることでWidgetの責任範囲が明確になるほか、constコンストラクターを扱いやすくなりパフォーマンス向上にも繋がる。
+
+例：
+
+```dart
+final count = signal(0);
+
+class SomeParent extends StatelessWidget {
+  const SomeParent({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const FractionallySizedBox(
+      widthFactor: 0.8,
+      child: SomeChild(),
+    );
+  }
+}
+
+class SomeChild extends StatelessWidget {
+  const SomeChild({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Watch((context) => Text(count.value.toString()));
+  }
+}
+```
 
 ## 状態管理
 
