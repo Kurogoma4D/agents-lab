@@ -32,6 +32,12 @@ class GenerateCopilotInstructionsCommand extends Command<int> {
         help: 'Whether to include original filenames as headers',
         defaultsTo: false,
       )
+      ..addFlag(
+        'git',
+        help: 'Include git-related instructions in the output',
+        defaultsTo: true,
+        negatable: true,
+      )
       ..addOption(
         'separator',
         help: 'Separator to insert between content from different files',
@@ -45,6 +51,7 @@ class GenerateCopilotInstructionsCommand extends Command<int> {
     final outputFile = argResults!['output-file'] as String;
     final includeFilenames = argResults!['include-filenames'] as bool;
     final separator = argResults!['separator'] as String;
+    final excludeGit = argResults!['no-git'] as bool;
 
     try {
       // Read all markdown files from source directory
@@ -58,11 +65,22 @@ class GenerateCopilotInstructionsCommand extends Command<int> {
 
       print('Found ${filesContent.length} markdown files');
 
+      // Filter out git-related files if --no-git flag is set
+      final filteredContent = excludeGit
+          ? Map.fromEntries(filesContent.entries.where(
+              (entry) => !entry.key.toLowerCase().contains('git')))
+          : filesContent;
+
+      if (filteredContent.isEmpty) {
+        stderr.writeln('No files remain after filtering');
+        return 1;
+      }
+
       // Merge file contents
       final buffer = StringBuffer();
       var isFirst = true;
 
-      for (final entry in filesContent.entries) {
+      for (final entry in filteredContent.entries) {
         if (!isFirst) {
           buffer.write(separator);
         }
@@ -80,7 +98,7 @@ class GenerateCopilotInstructionsCommand extends Command<int> {
       print('Writing merged content to $outputFile...');
       await FileUtils.writeToFile(outputFile, buffer.toString());
 
-      print('Successfully merged ${filesContent.length} files to $outputFile');
+      print('Successfully merged ${filteredContent.length} files to $outputFile');
       return 0;
     } catch (e) {
       stderr.writeln('Error: $e');
