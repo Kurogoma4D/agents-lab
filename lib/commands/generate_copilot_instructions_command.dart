@@ -32,6 +32,17 @@ class GenerateCopilotInstructionsCommand extends Command<int> {
         help: 'Whether to include original filenames as headers',
         defaultsTo: false,
       )
+      ..addFlag(
+        'git',
+        help: 'Include git-related instructions in the output',
+        defaultsTo: false,
+        negatable: true,
+      )
+      ..addOption(
+        'lang',
+        help: 'Comma-separated list of languages to include (e.g., dart,flutter). Only includes files prefixed with lang_*',
+        defaultsTo: '',
+      )
       ..addOption(
         'separator',
         help: 'Separator to insert between content from different files',
@@ -45,6 +56,11 @@ class GenerateCopilotInstructionsCommand extends Command<int> {
     final outputFile = argResults!['output-file'] as String;
     final includeFilenames = argResults!['include-filenames'] as bool;
     final separator = argResults!['separator'] as String;
+    final includeGit = argResults!['git'] as bool;
+    final languages = (argResults!['lang'] as String)
+        .split(',')
+        .where((lang) => lang.isNotEmpty)
+        .toSet();
 
     try {
       // Read all markdown files from source directory
@@ -58,11 +74,38 @@ class GenerateCopilotInstructionsCommand extends Command<int> {
 
       print('Found ${filesContent.length} markdown files');
 
+      // Filter files based on flags
+      final filteredContent = Map.fromEntries(
+        filesContent.entries.where((entry) {
+          final key = entry.key.toLowerCase();
+          final basename = path.basenameWithoutExtension(key);
+          
+          // Filter out git-related files if --git is not set
+          if (!includeGit && key.contains('git')) {
+            return false;
+          }
+
+          // Filter language-specific files based on --lang option
+          if (basename.startsWith('lang_')) {
+            final lang = basename.substring('lang_'.length);
+            return languages.contains(lang);
+          }
+
+          // Include non-language-specific files
+          return true;
+        }),
+      );
+
+      if (filteredContent.isEmpty) {
+        stderr.writeln('No files remain after filtering');
+        return 1;
+      }
+
       // Merge file contents
       final buffer = StringBuffer();
       var isFirst = true;
 
-      for (final entry in filesContent.entries) {
+      for (final entry in filteredContent.entries) {
         if (!isFirst) {
           buffer.write(separator);
         }
@@ -80,7 +123,7 @@ class GenerateCopilotInstructionsCommand extends Command<int> {
       print('Writing merged content to $outputFile...');
       await FileUtils.writeToFile(outputFile, buffer.toString());
 
-      print('Successfully merged ${filesContent.length} files to $outputFile');
+      print('Successfully merged ${filteredContent.length} files to $outputFile');
       return 0;
     } catch (e) {
       stderr.writeln('Error: $e');
