@@ -35,8 +35,13 @@ class GenerateCopilotInstructionsCommand extends Command<int> {
       ..addFlag(
         'git',
         help: 'Include git-related instructions in the output',
-        defaultsTo: true,
+        defaultsTo: false,
         negatable: true,
+      )
+      ..addOption(
+        'lang',
+        help: 'Comma-separated list of languages to include (e.g., dart,flutter). Only includes files prefixed with lang_*',
+        defaultsTo: '',
       )
       ..addOption(
         'separator',
@@ -51,7 +56,11 @@ class GenerateCopilotInstructionsCommand extends Command<int> {
     final outputFile = argResults!['output-file'] as String;
     final includeFilenames = argResults!['include-filenames'] as bool;
     final separator = argResults!['separator'] as String;
-    final excludeGit = argResults!['no-git'] as bool;
+    final includeGit = argResults!['git'] as bool;
+    final languages = (argResults!['lang'] as String)
+        .split(',')
+        .where((lang) => lang.isNotEmpty)
+        .toSet();
 
     try {
       // Read all markdown files from source directory
@@ -65,11 +74,27 @@ class GenerateCopilotInstructionsCommand extends Command<int> {
 
       print('Found ${filesContent.length} markdown files');
 
-      // Filter out git-related files if --no-git flag is set
-      final filteredContent = excludeGit
-          ? Map.fromEntries(filesContent.entries.where(
-              (entry) => !entry.key.toLowerCase().contains('git')))
-          : filesContent;
+      // Filter files based on flags
+      final filteredContent = Map.fromEntries(
+        filesContent.entries.where((entry) {
+          final key = entry.key.toLowerCase();
+          final basename = path.basenameWithoutExtension(key);
+          
+          // Filter out git-related files if --git is not set
+          if (!includeGit && key.contains('git')) {
+            return false;
+          }
+
+          // Filter language-specific files based on --lang option
+          if (basename.startsWith('lang_')) {
+            final lang = basename.substring('lang_'.length);
+            return languages.contains(lang);
+          }
+
+          // Include non-language-specific files
+          return true;
+        }),
+      );
 
       if (filteredContent.isEmpty) {
         stderr.writeln('No files remain after filtering');
