@@ -1,89 +1,69 @@
-# コーディングプラクティス
+# Coding Practices
 
-## 原則（バックエンド）
+## Principles (Backend)
 
-### ドメイン駆動設計 (DDD)
+### Domain-Driven Design (DDD)
 
-- 値オブジェクトとエンティティを区別
-- 集約で整合性を保証
-- リポジトリでデータアクセスを抽象化
-- 境界付けられたコンテキストを意識
-- レイヤードアーキテクチャで関心事の細分化を意識
+- Distinguish between Value Objects and Entities
+- Ensure consistency with Aggregates
+- Abstract data access with Repositories
+- Be aware of Bounded Contexts
+- Be aware of Layered Architecture to separate concerns
 
-## 原則（フロントエンド）
+## Principles (Frontend)
 
-### クリーンアーキテクチャ
+### Clean Architecture
 
-- レイヤー分離の徹底
-  - プレゼンテーション層：UI コンポーネントとイベントハンドラ
-  - アプリケーション層：ユースケースとビジネスロジック
-  - ドメイン層：ビジネスモデルと中核ロジック
-  - データ層：APIクライアントやストレージアクセス
-  - 各レイヤーがディレクトリ構造と一致するとは限らない
-    - 採用されているフレームワークやライブラリのベストプラクティスを優先する
+- Layer Responsibilities: Each layer—Presentation (UI), Application (use cases and business logic), Domain (core business), and Data (API and storage access)—has defined responsibilities. However, a strict correspondence to a directory structure is not required, emphasizing flexible implementation.
 
-- 依存関係の方向性
-  - 外側のレイヤーは内側のレイヤーに依存する
-  - 内側のレイヤーは外側のレイヤーを知らない
-  - 依存性逆転の原則により適切な抽象化を行う
+- Dependency Management: Outer layers depend on inner layers, while inner layers remain unaware of outer layer details. This, along with the Dependency Inversion Principle, ensures maintainability and ease of testing.
 
-- 責務の分離
-  - UI コンポーネントはデータの表示と入力のみを担当
-  - ビジネスロジックはプレゼンテーション層から分離
-  - データ取得ロジックはリポジトリに集約
+- Clarification of Responsibilities and Use Cases: The UI is responsible for display and input, business logic is handled in a dedicated layer, and data retrieval is consolidated within repositories, treating each function as an independent use case.
 
-- ユースケース中心の設計
-  - 機能ごとにユースケースを定義
-  - 入力、処理、出力を明確に定義
-  - ユースケース間の依存関係を最小化
+- Utilizing Dependency Injection: External dependencies are injected via interfaces, making it easy to substitute with mocks during testing.
 
-- 依存性注入
-  - 外部依存はインターフェースを通じて注入
-  - テスト時にはモックに置き換え可能に
-  - DIコンテナやプロバイダーを活用
+### Test-Driven Development (TDD)
 
-### テスト駆動開発 (TDD)
+- Red-Green-Refactor cycle
+- Treat tests as specifications
+- Iterate in small units
+- Continuous refactoring
 
-- Red-Green-Refactorサイクル
-- テストを仕様として扱う
-- 小さな単位で反復
-- 継続的なリファクタリング
+## Implementation Procedure
 
-## 実装手順
+1. Type Design
+   - Define types first
+   - Express the domain language with types
 
-1. **型設計**
-   - まず型を定義
-   - ドメインの言語を型で表現
+2. Implement from Pure Functions
+   - Implement functions without external dependencies first
+   - Write tests first
 
-2. **純粋関数から実装**
-   - 外部依存のない関数を先に
-   - テストを先に書く
+3. Separate Side Effects
+   - Push IO operations to the function boundary
+   - Wrap processes with side effects with Promise
 
-3. **副作用を分離**
-   - IO操作は関数の境界に押し出す
-   - 副作用を持つ処理をPromiseでラップ
+4. Adapter Implementation
+   - Abstract access to external services and DB
+   - Prepare test mocks
 
-4. **アダプター実装**
-   - 外部サービスやDBへのアクセスを抽象化
-   - テスト用モックを用意
+## Practices
 
-## プラクティス
+- Start small and expand gradually
+- Avoid excessive abstraction
+- Emphasize types over code
+- Adjust approach according to complexity
 
-- 小さく始めて段階的に拡張
-- 過度な抽象化を避ける
-- コードよりも型を重視
-- 複雑さに応じてアプローチを調整
+## Code Style
 
-## コードスタイル
+- Functions first (classes only when necessary)
+- Utilize immutable update patterns
+- Flatten conditional branches with early returns
+- Define enumeration types for errors and use cases
 
-- 関数優先（クラスは必要な場合のみ）
-- 不変更新パターンの活用
-- 早期リターンで条件分岐をフラット化
-- エラーとユースケースの列挙型定義
+## Test Strategy
 
-## テスト戦略
-
-- 純粋関数の単体テストを優先
-- インメモリ実装によるリポジトリテスト
-- テスト可能性を設計に組み込む
-- アサートファースト：期待結果から逆算
+- Prioritize unit tests for pure functions
+- Repository tests with in-memory implementation
+- Incorporate testability into design
+- Assert first: work backward from expected results
